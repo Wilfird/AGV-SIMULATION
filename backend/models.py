@@ -157,6 +157,22 @@ def update_product_qty(product_id, qty):
     conn.commit()
     cur.close()
     conn.close()
+    
+def rack_location_exists(zone, rack, r, c):
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT id FROM inventory
+        WHERE zone = ? AND rack = ? AND row_loc = ? AND col_loc = ?
+    """, (zone, rack, r, c))
+
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+
+    return row is not None
+    
 
 
 # -----------------------------------

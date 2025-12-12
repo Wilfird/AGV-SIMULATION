@@ -11,6 +11,7 @@ from models import (
     add_product,
     list_products,
     update_product_qty,
+    rack_location_exists
 )
 from config import GRID, AGV_START
 import threading
@@ -22,16 +23,16 @@ STATIC_DIR = BASE_DIR / "static"
 app = Flask(__name__, static_folder=str(STATIC_DIR))
 CORS(app)
 
-# AGV memory state
+# AGV State
 agv_state = {"r": AGV_START[0], "c": AGV_START[1], "status": "idle"}
 
-# Initialize DB
+# Initialize database
 init_db()
 
 
-# ----------------------
-# Static Routes
-# ----------------------
+# ---------------------------
+# STATIC ROUTES
+# ---------------------------
 @app.route("/")
 def index():
     return send_from_directory(app.static_folder, "index.html")
@@ -42,9 +43,9 @@ def static_files(filename):
     return send_from_directory(app.static_folder, filename)
 
 
-# ----------------------
-# GRID & PATH PLANNING
-# ----------------------
+# ---------------------------
+# GRID + PATH
+# ---------------------------
 @app.route("/api/grid", methods=["GET"])
 def get_grid():
     return jsonify(GRID)
@@ -55,6 +56,7 @@ def plan():
     data = request.json or {}
     start = data.get("start")
     goal = data.get("goal")
+
     if not start or not goal:
         return jsonify({"error": "start and goal required"}), 400
 
@@ -62,9 +64,9 @@ def plan():
     return jsonify({"path": path})
 
 
-# ----------------------
-# ORDERS
-# ----------------------
+# ---------------------------
+# ORDERS (WMS)
+# ---------------------------
 @app.route("/api/orders", methods=["POST"])
 def api_create_order():
     data = request.json or {}
@@ -80,13 +82,12 @@ def api_create_order():
 
 @app.route("/api/orders", methods=["GET"])
 def api_list_orders():
-    rows = list_orders()
-    return jsonify(rows)
+    return jsonify(list_orders())
 
 
-# ----------------------
+# ---------------------------
 # AGV EXECUTION
-# ----------------------
+# ---------------------------
 @app.route("/api/agv", methods=["GET"])
 def api_agv():
     return jsonify(agv_state)
@@ -95,10 +96,12 @@ def api_agv():
 def run_agv_path(path, order_id=None):
     global agv_state
     agv_state["status"] = "moving"
+
     try:
         for node in path[1:]:
             agv_state["r"], agv_state["c"] = node
             time.sleep(0.15)
+
     finally:
         agv_state["status"] = "idle"
         if order_id:
@@ -120,11 +123,11 @@ def api_execute():
     return jsonify({"message": "execution started"})
 
 
-# ----------------------
-# INVENTORY (NOW WITH ZONES + RACKS)
-# ----------------------
+# ---------------------------
+# INVENTORY (Zones + Racks)
+# ---------------------------
 @app.route("/api/inventory", methods=["GET"])
-def api_list_inventory():
+def api_get_inventory():
     return jsonify(list_products())
 
 
@@ -139,19 +142,20 @@ def api_add_inventory():
     row_loc = data.get("row_loc")
     col_loc = data.get("col_loc")
 
-    # Validate fields
     if None in (name, qty, zone, rack, row_loc, col_loc):
-        return jsonify({"error": "product_name, quantity, zone, rack, row_loc, col_loc required"}), 400
+        return jsonify({"error": "All fields required"}), 400
 
-    # Convert to correct types
     try:
         qty = int(qty)
         row_loc = int(row_loc)
         col_loc = int(col_loc)
-    except:
-        return jsonify({"error": "quantity, row_loc and col_loc must be integers"}), 400
+    except ValueError:
+        return jsonify({"error": "quantity, row_loc, col_loc must be integers"}), 400
 
-    # Add to DB
+    # Prevent duplicate rack location
+    if rack_location_exists(zone, rack, row_loc, col_loc):
+        return jsonify({"error": "This rack location is already occupied!"}), 400
+
     add_product(name, qty, zone, rack, row_loc, col_loc)
     return jsonify({"message": "Product added"})
 
@@ -166,15 +170,15 @@ def api_update_inventory(pid):
 
     try:
         qty = int(qty)
-    except:
+    except ValueError:
         return jsonify({"error": "quantity must be integer"}), 400
 
     update_product_qty(pid, qty)
     return jsonify({"message": "Quantity updated"})
 
 
-# ----------------------
+# ---------------------------
 # RUN SERVER
-# ----------------------
+# ---------------------------
 if __name__ == "__main__":
     app.run(port=5000, debug=True)
