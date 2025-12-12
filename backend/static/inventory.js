@@ -41,12 +41,12 @@ async function addProduct() {
     const row = document.getElementById("prow").value;
     const col = document.getElementById("pcol").value;
 
-    if (!name || !qty || row === "" || col === "") {
+    if (!name || !qty || !zone || !rack || row === "" || col === "") {
         alert("Please fill all fields!");
         return;
     }
 
-    await fetch("/api/inventory", {
+    const res = await fetch("/api/inventory", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -59,19 +59,34 @@ async function addProduct() {
         })
     });
 
-    alert("Product Added!");
+    const data = await res.json();
+
+    // ❗ Show backend validation errors (duplicate slot)
+    if (!res.ok) {
+        alert("❌ ERROR: " + data.error);
+        return;
+    }
+
+    alert("✅ Product Added Successfully!");
     loadInventory();
 }
 
 async function updateQty(id) {
     const newQty = document.getElementById(`qty_${id}`).value;
 
-    await fetch(`/api/inventory/${id}`, {
+    const res = await fetch(`/api/inventory/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ quantity: +newQty })
     });
 
-    alert("Quantity Updated!");
+    const data = await res.json();
+
+    if (!res.ok) {
+        alert("❌ ERROR: " + data.error);
+        return;
+    }
+
+    alert("✔ Quantity Updated");
     loadInventory();
 }

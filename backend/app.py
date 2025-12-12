@@ -3,6 +3,7 @@ from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from pathlib import Path
 from astar import astar
+
 from models import (
     init_db,
     create_order,
@@ -13,6 +14,7 @@ from models import (
     update_product_qty,
     rack_location_exists
 )
+
 from config import GRID, AGV_START
 import threading
 import time
@@ -23,16 +25,16 @@ STATIC_DIR = BASE_DIR / "static"
 app = Flask(__name__, static_folder=str(STATIC_DIR))
 CORS(app)
 
-# AGV State
+# AGV state memory
 agv_state = {"r": AGV_START[0], "c": AGV_START[1], "status": "idle"}
 
-# Initialize database
+# Initialize DB
 init_db()
 
 
-# ---------------------------
+# -----------------------------------------------------
 # STATIC ROUTES
-# ---------------------------
+# -----------------------------------------------------
 @app.route("/")
 def index():
     return send_from_directory(app.static_folder, "index.html")
@@ -43,16 +45,16 @@ def static_files(filename):
     return send_from_directory(app.static_folder, filename)
 
 
-# ---------------------------
-# GRID + PATH
-# ---------------------------
+# -----------------------------------------------------
+# GRID + PATH PLANNING
+# -----------------------------------------------------
 @app.route("/api/grid", methods=["GET"])
-def get_grid():
+def api_grid():
     return jsonify(GRID)
 
 
 @app.route("/api/plan", methods=["POST"])
-def plan():
+def api_plan():
     data = request.json or {}
     start = data.get("start")
     goal = data.get("goal")
@@ -64,9 +66,9 @@ def plan():
     return jsonify({"path": path})
 
 
-# ---------------------------
-# ORDERS (WMS)
-# ---------------------------
+# -----------------------------------------------------
+# ORDERS
+# -----------------------------------------------------
 @app.route("/api/orders", methods=["POST"])
 def api_create_order():
     data = request.json or {}
@@ -85,27 +87,25 @@ def api_list_orders():
     return jsonify(list_orders())
 
 
-# ---------------------------
-# AGV EXECUTION
-# ---------------------------
+# -----------------------------------------------------
+# AGV CONTROLS
+# -----------------------------------------------------
 @app.route("/api/agv", methods=["GET"])
 def api_agv():
     return jsonify(agv_state)
 
 
 def run_agv_path(path, order_id=None):
-    global agv_state
     agv_state["status"] = "moving"
 
-    try:
-        for node in path[1:]:
-            agv_state["r"], agv_state["c"] = node
-            time.sleep(0.15)
+    for node in path[1:]:
+        agv_state["r"], agv_state["c"] = node
+        time.sleep(0.15)
 
-    finally:
-        agv_state["status"] = "idle"
-        if order_id:
-            update_order_status(order_id, "completed")
+    agv_state["status"] = "idle"
+
+    if order_id:
+        update_order_status(order_id, "completed")
 
 
 @app.route("/api/execute", methods=["POST"])
@@ -123,16 +123,16 @@ def api_execute():
     return jsonify({"message": "execution started"})
 
 
-# ---------------------------
-# INVENTORY (Zones + Racks)
-# ---------------------------
+# -----------------------------------------------------
+# INVENTORY (ZONES + RACKS)
+# -----------------------------------------------------
 @app.route("/api/inventory", methods=["GET"])
-def api_get_inventory():
+def api_inventory_list():
     return jsonify(list_products())
 
 
 @app.route("/api/inventory", methods=["POST"])
-def api_add_inventory():
+def api_inventory_add():
     data = request.json or {}
 
     name = data.get("product_name")
@@ -142,26 +142,32 @@ def api_add_inventory():
     row_loc = data.get("row_loc")
     col_loc = data.get("col_loc")
 
+    # Validate
     if None in (name, qty, zone, rack, row_loc, col_loc):
-        return jsonify({"error": "All fields required"}), 400
+        return jsonify({"error": "All fields are required"}), 400
 
     try:
         qty = int(qty)
         row_loc = int(row_loc)
         col_loc = int(col_loc)
-    except ValueError:
-        return jsonify({"error": "quantity, row_loc, col_loc must be integers"}), 400
+    except:
+        return jsonify({"error": "qty, row_loc, col_loc must be integers"}), 400
 
-    # Prevent duplicate rack location
+    # Check if rack slot already used
     if rack_location_exists(zone, rack, row_loc, col_loc):
-        return jsonify({"error": "This rack location is already occupied!"}), 400
+        return jsonify({"error": "Rack location already occupied"}), 400
 
-    add_product(name, qty, zone, rack, row_loc, col_loc)
-    return jsonify({"message": "Product added"})
+    # Insert product
+    saved = add_product(name, qty, zone, rack, row_loc, col_loc)
+
+    if not saved:
+        return jsonify({"error": "Rack slot already used (DB constraint)"}), 400
+
+    return jsonify({"message": "Product added successfully"})
 
 
 @app.route("/api/inventory/<int:pid>", methods=["PUT"])
-def api_update_inventory(pid):
+def api_inventory_update(pid):
     data = request.json or {}
     qty = data.get("quantity")
 
@@ -170,15 +176,15 @@ def api_update_inventory(pid):
 
     try:
         qty = int(qty)
-    except ValueError:
+    except:
         return jsonify({"error": "quantity must be integer"}), 400
 
     update_product_qty(pid, qty)
     return jsonify({"message": "Quantity updated"})
 
 
-# ---------------------------
+# -----------------------------------------------------
 # RUN SERVER
-# ---------------------------
+# -----------------------------------------------------
 if __name__ == "__main__":
     app.run(port=5000, debug=True)
