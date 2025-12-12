@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Warehouse Inventory System</title>
+    <link rel="stylesheet" href="/static/inventory.css">
+</head>
+<body>
+
+<div class="container">
+
+    <header>
+        <h1>📦 Warehouse Inventory Management</h1>
+        <a href="/" class="btn">⬅ Back to AGV Simulation</a>
+    </header>
+
+    <section class="inventory-section">
+
+        <!-- Add Product Form -->
+        <div class="form-container">
+            <h2>Add New Product</h2>
+
+            <label>Zone:</label>
+            <select id="zone">
+                <option>A</option>
+                <option>B</option>
+                <option>C</option>
+            </select>
+
+            <label>Rack:</label>
+            <select id="rack">
+                <option>1</option>
+                <option>2</option>
+            </select>
+
+            <label>Product Name:</label>
+            <input type="text" id="pname">
+
+            <label>Quantity:</label>
+            <input type="number" id="pqty">
+
+            <label>Rack Location (Row, Column):</label>
+            <div class="coord-group">
+                <input type="number" id="prow" placeholder="Row">
+                <input type="number" id="pcol" placeholder="Column">
+            </div>
+
+            <button class="btn" onclick="addProduct()">Add Product</button>
+        </div>
+
+        <!-- Inventory Display -->
+        <div class="table-container">
+            <h2>Inventory List</h2>
+
+            <table id="inventoryTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Product</th>
+                        <th>Qty</th>
+                        <th>Zone</th>
+                        <th>Rack</th>
+                        <th>Location (r,c)</th>
+                        <th>Update Qty</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+    </section>
+
+</div>
+
+<script src="/static/inventory.js"></script>
+
+</body>
+</html>

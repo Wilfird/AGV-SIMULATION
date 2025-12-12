@@ -1,0 +1,81 @@
+body {
+    margin: 0;
+    background: #f7f9fb;
+    font-family: Arial, sans-serif;
+}
+
+.container {
+    width: 90%;
+    margin: auto;
+    padding: 20px;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+h1 {
+    color: #333;
+}
+
+.btn {
+    background: #0066ff;
+    color: white;
+    padding: 8px 14px;
+    border-radius: 6px;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.inventory-section {
+    display: flex;
+    margin-top: 25px;
+    gap: 30px;
+}
+
+.form-container, .table-container {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    width: 45%;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+label {
+    display: block;
+    margin-top: 12px;
+}
+
+input {
+    width: 95%;
+    padding: 6px;
+    margin-top: 5px;
+}
+
+.coord-group {
+    display: flex;
+    gap: 10px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+}
+
+table th, table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: center;
+}
+
+.update-btn {
+    padding: 4px 10px;
+    background: orange;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}

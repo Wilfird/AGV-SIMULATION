@@ -1,0 +1,35 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>AGV Simulation - Flask Backend</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>AGV Simulation (Flask Backend)</h1>
+      <div class="controls">
+        <label>Pickup: <input id="pickup" placeholder="3,2"></label>
+        <label>Delivery: <input id="delivery" placeholder="5,7"></label>
+        <button id="createOrder">Create Order</button>
+        <button id="resetBtn">Reset AGV</button>
+      </div>
+    </header>
+    <main>
+      <section class="left">
+        <div id="grid" class="grid"></div>
+      </section>
+      <aside class="right">
+        <h2>Orders</h2>
+        <ul id="ordersList"></ul>
+        <h3>Status</h3>
+        <pre id="statusBox"></pre>
+      </aside>
+    </main>
+    <footer><small>AGV=blue. Pickup=green. Delivery=orange.</small></footer>
+  </div>
+  <script src="/static/main.js"></script>
+</body>
+</html>
