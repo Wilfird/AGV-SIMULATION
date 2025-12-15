@@ -1,44 +1,114 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>ERP Dashboard</title>
     <link rel="stylesheet" href="/static/erp.css">
 </head>
 <body>
 
 <div class="container">
-    <h1>🏭 ERP Dashboard</h1>
 
-    <div class="cards">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <h2>🏭 ERP SYSTEM</h2>
 
-        <div class="card">
-            <h2>📦 Inventory</h2>
-            <p id="inventoryCount">Loading...</p>
-        </div>
+        <button onclick="showSection('overview')">📊 Overview</button>
 
-        <div class="card">
-            <h2>🧾 Orders</h2>
-            <p id="orderCount">Loading...</p>
-        </div>
+        <!-- ✅ REDIRECT TO WMS INVENTORY -->
+        <button onclick="goToInventory()">📦 Inventory</button>
 
-        <div class="card">
-            <h2>🚚 AGV Status</h2>
+        <button onclick="showSection('orders')">🧾 Orders</button>
+        <button onclick="showSection('agv')">🚚 AGV Status</button>
+        <button onclick="showSection('reports')">📈 Reports</button>
+
+        <a href="/" class="back-btn">⬅ AGV Simulation</a>
+    </aside>
+
+    <!-- CONTENT -->
+    <main class="content">
+
+        <!-- ================= OVERVIEW ================= -->
+        <section id="overview" class="section">
+            <h3>📊 System Overview</h3>
+
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <h4>Total Products</h4>
+                    <p id="inventoryCount" class="kpi-value">Loading...</p>
+                </div>
+
+                <div class="kpi-card">
+                    <h4>Active Orders</h4>
+                    <p id="kpiOrders" class="kpi-value">Loading...</p>
+                </div>
+
+                <div class="kpi-card">
+                    <h4>AGV Status</h4>
+                    <p id="kpiAgv" class="kpi-value">Loading...</p>
+                </div>
+
+                <div class="kpi-card">
+                    <h4>Warehouse Zones</h4>
+                    <p class="kpi-value">4</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= ORDERS ================= -->
+        <section id="orders" class="section hidden full-width">
+
+            <h3>🧾 Create Order (ERP)</h3>
+
+            <div class="order-card">
+
+                <label>Order Type</label>
+                <input type="text" id="orderType" value="Production">
+
+                <h4>Order Items</h4>
+
+                <div id="orderItems">
+                    <div class="order-row">
+                        <input type="number" placeholder="Product ID" class="pid">
+                        <input type="number" placeholder="Quantity" class="qty">
+                        <button class="remove-btn" onclick="removeItem(this)">−</button>
+                    </div>
+                </div>
+
+                <button class="add-btn" onclick="addItem()">➕ Add Item</button>
+
+                <button class="submit-btn" onclick="createOrderERP()">
+                    Create & Send to WMS
+                </button>
+
+                <p id="orderMsg"></p>
+            </div>
+
+        </section>
+
+        <!-- ================= AGV ================= -->
+        <section id="agv" class="section hidden">
+            <h3>🚚 AGV Live Status</h3>
             <p id="agvStatus">Loading...</p>
-        </div>
+        </section>
 
-        <div class="card">
-            <h2>📊 Reports</h2>
-            <p>Coming Soon</p>
-        </div>
+        <!-- ================= REPORTS ================= -->
+        <section id="reports" class="section hidden">
+            <h3>📈 Reports & Analytics</h3>
+            <p>Performance charts coming soon 🚀</p>
+        </section>
 
-    </div>
-
-    <div class="actions">
-        <a href="/static/inventory.html" class="btn">📦 Manage Inventory</a>
-        <a href="/" class="btn">⬅ Back to AGV</a>
-    </div>
+    </main>
 </div>
 
 <script src="/static/erp.js"></script>
+
+<!-- ✅ REDIRECT FUNCTION -->
+<script>
+function goToInventory() {
+    window.location.href = "/static/inventory.html";
+}
+</script>
+
 </body>
 </html>

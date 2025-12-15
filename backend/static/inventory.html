@@ -1,58 +1,84 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Warehouse Inventory System</title>
+    <meta charset="UTF-8">
+    <title>Warehouse Inventory | WMS</title>
     <link rel="stylesheet" href="/static/inventory.css">
 </head>
 <body>
 
-<div class="container">
+<div class="inventory-page">
 
-    <header>
-        <h1>📦 Warehouse Inventory Management</h1>
-        <a href="/" class="btn">⬅ Back to AGV Simulation</a>
-    </header>
-
-    <section class="inventory-section">
-
-        <!-- Add Product Form -->
-        <div class="form-container">
-            <h2>Add New Product</h2>
-
-            <label>Zone:</label>
-            <select id="zone">
-                <option>A</option>
-                <option>B</option>
-                <option>C</option>
-                <option>D</option>
-            </select>
-
-            <label>Rack:</label>
-            <select id="rack">
-                <option>1</option>
-                <option>2</option>
-            </select>
-
-            <label>Product Name:</label>
-            <input type="text" id="pname">
-
-            <label>Quantity:</label>
-            <input type="number" id="pqty">
-
-            <label>Rack Location (Row, Column):</label>
-            <div class="coord-group">
-                <input type="number" id="prow" placeholder="Row">
-                <input type="number" id="pcol" placeholder="Column">
-            </div>
-
-            <button class="btn" onclick="addProduct()">Add Product</button>
+    <!-- HEADER -->
+    <header class="inventory-header">
+        <div>
+            <h1>📦 Warehouse Inventory Management</h1>
+            <p>Manage products, zones & rack locations</p>
         </div>
 
-        <!-- Inventory Display -->
-        <div class="table-container">
-            <h2>Inventory List</h2>
+        <div class="header-actions">
+            <a href="/erp" class="btn secondary">⬅ ERP Dashboard</a>
+            <a href="/" class="btn">AGV Simulation</a>
+        </div>
+    </header>
 
-            <table id="inventoryTable">
+    <!-- MAIN CONTENT -->
+    <div class="inventory-content">
+
+        <!-- ADD PRODUCT CARD -->
+        <div class="card form-card">
+            <h2>➕ Add New Product</h2>
+
+            <div class="form-grid">
+
+                <div>
+                    <label>Zone</label>
+                    <select id="zone">
+                        <option>A</option>
+                        <option>B</option>
+                        <option>C</option>
+                        <option>D</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label>Rack</label>
+                    <select id="rack">
+                        <option>1</option>
+                        <option>2</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label>Product Name</label>
+                    <input type="text" id="pname" placeholder="Eg: Motor Assembly">
+                </div>
+
+                <div>
+                    <label>Quantity</label>
+                    <input type="number" id="pqty" placeholder="Eg: 50">
+                </div>
+
+                <div>
+                    <label>Row</label>
+                    <input type="number" id="prow" placeholder="Row">
+                </div>
+
+                <div>
+                    <label>Column</label>
+                    <input type="number" id="pcol" placeholder="Column">
+                </div>
+
+            </div>
+
+            <button class="btn full" onclick="addProduct()">Add Product to Rack</button>
+        </div>
+
+        <!-- INVENTORY TABLE CARD -->
+        <div class="card table-card">
+            <h2>📋 Inventory List</h2>
+
+            <table id="inventoryTable" class="inventory-table">
                 <thead>
                     <tr>
                         <th>ID</th>
@@ -60,19 +86,20 @@
                         <th>Qty</th>
                         <th>Zone</th>
                         <th>Rack</th>
-                        <th>Location (r,c)</th>
-                        <th>Update Qty</th>
+                        <th>Location (R,C)</th>
+                        <th>Update</th>
                     </tr>
                 </thead>
-                <tbody></tbody>
+                <tbody>
+                    <!-- Data loaded from inventory.js -->
+                </tbody>
             </table>
         </div>
 
-    </section>
+    </div>
 
 </div>
 
 <script src="/static/inventory.js"></script>
-
 </body>
 </html>
