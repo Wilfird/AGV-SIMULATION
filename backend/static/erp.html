@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ERP Dashboard</title>
+    <link rel="stylesheet" href="/static/erp.css">
+</head>
+<body>
+
+<div class="container">
+    <h1>🏭 ERP Dashboard</h1>
+
+    <div class="cards">
+
+        <div class="card">
+            <h2>📦 Inventory</h2>
+            <p id="inventoryCount">Loading...</p>
+        </div>
+
+        <div class="card">
+            <h2>🧾 Orders</h2>
+            <p id="orderCount">Loading...</p>
+        </div>
+
+        <div class="card">
+            <h2>🚚 AGV Status</h2>
+            <p id="agvStatus">Loading...</p>
+        </div>
+
+        <div class="card">
+            <h2>📊 Reports</h2>
+            <p>Coming Soon</p>
+        </div>
+
+    </div>
+
+    <div class="actions">
+        <a href="/static/inventory.html" class="btn">📦 Manage Inventory</a>
+        <a href="/" class="btn">⬅ Back to AGV</a>
+    </div>
+</div>
+
+<script src="/static/erp.js"></script>
+</body>
+</html>

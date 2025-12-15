@@ -150,20 +150,19 @@ def api_inventory_add():
         qty = int(qty)
         row_loc = int(row_loc)
         col_loc = int(col_loc)
-    except:
+    except ValueError:
         return jsonify({"error": "qty, row_loc, col_loc must be integers"}), 400
 
-    # Check if rack slot already used
+    # 🚫 Prevent duplicate rack location
     if rack_location_exists(zone, rack, row_loc, col_loc):
-        return jsonify({"error": "Rack location already occupied"}), 400
+        return jsonify({
+            "error": f"Rack {zone}-{rack} at ({row_loc},{col_loc}) is already occupied"
+        }), 400
 
-    # Insert product
-    saved = add_product(name, qty, zone, rack, row_loc, col_loc)
+    # ✅ Insert product
+    add_product(name, qty, zone, rack, row_loc, col_loc)
 
-    if not saved:
-        return jsonify({"error": "Rack slot already used (DB constraint)"}), 400
-
-    return jsonify({"message": "Product added successfully"})
+    return jsonify({"message": "Product added successfully"}), 200
 
 
 @app.route("/api/inventory/<int:pid>", methods=["PUT"])
@@ -176,11 +175,16 @@ def api_inventory_update(pid):
 
     try:
         qty = int(qty)
-    except:
+    except ValueError:
         return jsonify({"error": "quantity must be integer"}), 400
 
     update_product_qty(pid, qty)
     return jsonify({"message": "Quantity updated"})
+
+@app.route("/erp")
+def erp_dashboard():
+    return send_from_directory(app.static_folder, "erp.html")
+
 
 
 # -----------------------------------------------------

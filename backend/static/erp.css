@@ -1,0 +1,147 @@
+/* ----------------------------
+   Global Reset
+-----------------------------*/
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* ----------------------------
+   Base Styles
+-----------------------------*/
+body {
+    font-family: "Segoe UI", Roboto, Arial, sans-serif;
+    background: #f1f5f9;
+    color: #1f2937;
+}
+
+/* ----------------------------
+   Layout
+-----------------------------*/
+.container {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* ----------------------------
+   Sidebar
+-----------------------------*/
+.sidebar {
+    width: 240px;
+    background: linear-gradient(180deg, #111827, #1f2937);
+    color: #e5e7eb;
+    padding: 24px;
+    box-shadow: 4px 0 10px rgba(0,0,0,0.1);
+}
+
+.sidebar h2 {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 32px;
+    text-align: center;
+    letter-spacing: 0.5px;
+}
+
+.sidebar button {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 14px;
+    background: #374151;
+    color: #e5e7eb;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.sidebar button:hover {
+    background: #2563eb;
+    transform: translateX(4px);
+}
+
+/* ----------------------------
+   Content Area
+-----------------------------*/
+.content {
+    flex: 1;
+    padding: 40px;
+}
+
+/* ----------------------------
+   Sections / Cards
+-----------------------------*/
+.section {
+    background: #ffffff;
+    padding: 28px;
+    border-radius: 12px;
+    width: 420px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+    animation: fadeIn 0.3s ease;
+}
+
+.section h3 {
+    margin-bottom: 20px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #111827;
+}
+
+/* ----------------------------
+   Inputs
+-----------------------------*/
+.section input {
+    width: 100%;
+    padding: 10px 12px;
+    margin-bottom: 14px;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    font-size: 14px;
+}
+
+.section input:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 2px rgba(37,99,235,0.15);
+}
+
+/* ----------------------------
+   Buttons
+-----------------------------*/
+.section button {
+    padding: 10px 18px;
+    background: #2563eb;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.25s ease, transform 0.15s ease;
+}
+
+.section button:hover {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+}
+
+/* ----------------------------
+   Hidden Utility
+-----------------------------*/
+.hidden {
+    display: none;
+}
+
+/* ----------------------------
+   Animations
+-----------------------------*/
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
