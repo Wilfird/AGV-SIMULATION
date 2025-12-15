@@ -1,0 +1,6 @@
+id,product_name,quantity,zone,rack,row_loc,col_loc
+1,YP000AM2,1,A,1,2,4
+2,YP000AM2,1,A,1,2,4
+3,YP000AM45,1,B,2,2,4
+4,yp0000am2,1,A,1,2,3
+5,yp0000am1,1,A,1,2,2
