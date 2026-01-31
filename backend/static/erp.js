@@ -2,7 +2,6 @@
 // ERP DASHBOARD CONTROLLER
 // =====================================
 
-// Auto refresh interval (ms)
 const REFRESH_INTERVAL = 3000;
 
 // On page load
@@ -16,35 +15,27 @@ function loadAll() {
     loadInventoryKPI();
     loadOrderCount();
     loadAgvStatus();
-    loadInventoryTable(); 
 }
 
 // =====================================
-// INVENTORY (WMS KPI)
+// INVENTORY KPI
 // =====================================
 async function loadInventoryKPI() {
     const el = document.getElementById("inventoryCount");
 
     try {
         const res = await fetch("/api/inventory");
-        if (!res.ok) throw new Error("Inventory API error");
-
         const data = await res.json();
 
-        // Total SKUs
-        const totalProducts = data.length;
-
-        // Total quantity
-        const totalQuantity = data.reduce(
+        const totalQty = data.reduce(
             (sum, item) => sum + Number(item.quantity),
             0
         );
 
-        el.innerText = `${totalQuantity} Units`;
+        el.innerText = `${totalQty} Units`;
         el.className = "kpi-value success";
 
-    } catch (err) {
-        console.error("Inventory error:", err);
+    } catch {
         el.innerText = "Unavailable";
         el.className = "kpi-value error";
     }
@@ -54,22 +45,20 @@ async function loadInventoryKPI() {
 // ORDERS KPI
 // =====================================
 async function loadOrderCount() {
-    const el = document.getElementById("orderCount");
+    const el = document.getElementById("kpiOrders");
 
     try {
         const res = await fetch("/api/orders");
-        if (!res.ok) throw new Error("Orders API error");
-
         const data = await res.json();
 
-        const active = data.filter(o => o.status !== "completed").length;
-        el.innerText = `${active} Active Orders`;
-        el.className = "kpi-value warning";
+        const active = data.filter(
+            o => o.status !== "completed" && o.status !== "failed"
+        ).length;
 
-    } catch (err) {
-        console.error("Order error:", err);
+        el.innerText = `${active} Active Orders`;
+
+    } catch {
         el.innerText = "Unavailable";
-        el.className = "kpi-value error";
     }
 }
 
@@ -77,82 +66,183 @@ async function loadOrderCount() {
 // AGV STATUS KPI
 // =====================================
 async function loadAgvStatus() {
-    const el = document.getElementById("agvStatus");
+    const el = document.getElementById("kpiAgv");
 
     try {
         const res = await fetch("/api/agv");
-        if (!res.ok) throw new Error("AGV API error");
-
         const data = await res.json();
+
         el.innerText = data.status.toUpperCase();
 
-        el.className =
-            data.status === "moving"
-                ? "kpi-value moving"
-                : "kpi-value idle";
-
-    } catch (err) {
-        console.error("AGV error:", err);
+    } catch {
         el.innerText = "Unavailable";
-        el.className = "kpi-value error";
     }
 }
 
+// =====================================
+// INVENTORY TABLE
+// =====================================
+async function loadInventoryTable() {
+    const tbody = document.getElementById("inventoryTable");
 
-// // =====================================
-// // INVENTORY TABLE (ERP VIEW)
-// // =====================================
-// async function loadInventoryTable() {
-//     const tbody = document.getElementById("inventoryTable");
+    try {
+        const res = await fetch("/api/inventory");
+        const data = await res.json();
 
-//     try {
-//         const res = await fetch("/api/inventory");
-//         if (!res.ok) throw new Error("Inventory API error");
+        tbody.innerHTML = "";
 
-//         const data = await res.json();
-//         tbody.innerHTML = "";
+        if (data.length === 0) {
+            tbody.innerHTML =
+                `<tr><td colspan="6">No inventory available</td></tr>`;
+            return;
+        }
 
-//         if (data.length === 0) {
-//             tbody.innerHTML = `<tr><td colspan="6">No inventory available</td></tr>`;
-//             return;
-//         }
+        data.forEach(item => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${item.id}</td>
+                <td>${item.product_name}</td>
+                <td>${item.quantity}</td>
+                <td>${item.zone}</td>
+                <td>${item.rack}</td>
+                <td>(${item.row_loc}, ${item.col_loc})</td>
+            `;
+            tbody.appendChild(row);
+        });
 
-//         data.forEach(item => {
-//             const row = document.createElement("tr");
+    } catch {
+        tbody.innerHTML =
+            `<tr><td colspan="6">Failed to load inventory</td></tr>`;
+    }
+}
 
-//             row.innerHTML = `
-//                 <td>${item.id}</td>
-//                 <td>${item.product_name}</td>
-//                 <td>${item.quantity}</td>
-//                 <td>${item.zone}</td>
-//                 <td>${item.rack}</td>
-//                 <td>(${item.row_loc}, ${item.col_loc})</td>
-//             `;
-
-//             tbody.appendChild(row);
-//         });
-
-//     } catch (err) {
-//         console.error("Inventory table error:", err);
-//         tbody.innerHTML =
-//             `<tr><td colspan="6">Failed to load inventory</td></tr>`;
-//     }
-// }
-
-
-// -----------------------------
+// =====================================
 // SECTION SWITCHER
-// -----------------------------
+// =====================================
 function showSection(sectionId) {
-    document.querySelectorAll(".section").forEach(sec => {
-        sec.classList.add("hidden");
-    });
+    document.querySelectorAll(".section").forEach(sec =>
+        sec.classList.add("hidden")
+    );
 
-    const section = document.getElementById(sectionId);
-    section.classList.remove("hidden");
+    document.getElementById(sectionId).classList.remove("hidden");
 
-    // Load data only when needed
-    if (sectionId === "inventorySection") {
-        loadInventoryTable();
+    if (sectionId === "orders") {
+        loadOrdersTable();
+    }
+}
+
+// =====================================
+// CREATE ORDER
+// =====================================
+async function createOrderERP() {
+    const pr = document.getElementById("pickupRow").value;
+    const pc = document.getElementById("pickupCol").value;
+    const dr = document.getElementById("deliveryRow").value;
+    const dc = document.getElementById("deliveryCol").value;
+
+    const msg = document.getElementById("orderMsg");
+
+    if (pr === "" || pc === "" || dr === "" || dc === "") {
+        msg.innerText = "❌ Please fill all fields";
+        msg.style.color = "red";
+        return;
+    }
+
+    try {
+        const res = await fetch("/api/orders", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                pickup: [Number(pr), Number(pc)],
+                delivery: [Number(dr), Number(dc)]
+            })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error);
+
+        msg.innerText = `✅ Order Created (ID: ${data.order_id})`;
+        msg.style.color = "green";
+
+        // Clear form
+        ["pickupRow","pickupCol","deliveryRow","deliveryCol"]
+            .forEach(id => document.getElementById(id).value = "");
+
+    } catch (err) {
+        msg.innerText = "❌ Failed to create order";
+        msg.style.color = "red";
+        console.error(err);
+    }
+}
+
+// =====================================
+// LOAD ORDERS TABLE
+// =====================================
+async function loadOrdersTable() {
+    const tbody = document.getElementById("ordersTable");
+
+    try {
+        const res = await fetch("/api/orders");
+        const orders = await res.json();
+
+        tbody.innerHTML = "";
+
+        if (orders.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5">No orders</td></tr>`;
+            return;
+        }
+
+        orders.forEach(order => {
+            const tr = document.createElement("tr");
+
+            const canExecute = order.status === "pending";
+
+            tr.innerHTML = `
+                <td>${order.id}</td>
+                <td>(${order.pickup_r}, ${order.pickup_c})</td>
+                <td>(${order.delivery_r}, ${order.delivery_c})</td>
+                <td>${order.status}</td>
+                <td>
+                    ${
+                        canExecute
+                        ? `<button onclick="executeOrder(${order.id})">▶ Execute</button>`
+                        : "—"
+                    }
+                </td>
+            `;
+
+            tbody.appendChild(tr);
+        });
+
+    } catch (err) {
+        console.error(err);
+        tbody.innerHTML = `<tr><td colspan="5">Error loading orders</td></tr>`;
+    }
+}
+
+// =====================================
+// EXECUTE ORDER
+// =====================================
+async function executeOrder(orderId) {
+    if (!confirm("Execute this order?")) return;
+
+    try {
+        const res = await fetch(`/api/execute-order/${orderId}`, {
+            method: "POST"
+        });
+
+        const result = await res.json();
+
+        if (!res.ok) throw new Error(result.error);
+
+        alert(result.message);
+
+        loadOrdersTable();
+        loadAgvStatus();
+
+    } catch (err) {
+        alert("Execution failed");
+        console.error(err);
     }
 }

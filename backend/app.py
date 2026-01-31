@@ -2,7 +2,11 @@
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from pathlib import Path
+import threading
+import time
+
 from astar import astar
+from config import GRID, AGV_START
 
 from models import (
     init_db,
@@ -12,183 +16,171 @@ from models import (
     add_product,
     list_products,
     update_product_qty,
-    rack_location_exists
+    rack_location_exists,
+    get_order_by_id
 )
 
-from config import GRID, AGV_START
-import threading
-import time
-
+# --------------------------------
+# APP SETUP
+# --------------------------------
 BASE_DIR = Path(__file__).parent
 STATIC_DIR = BASE_DIR / "static"
 
 app = Flask(__name__, static_folder=str(STATIC_DIR))
 CORS(app)
 
-# AGV state memory
-agv_state = {"r": AGV_START[0], "c": AGV_START[1], "status": "idle"}
+# --------------------------------
+# AGV STATE
+# --------------------------------
+agv_state = {
+    "r": AGV_START[0],
+    "c": AGV_START[1],
+    "status": "idle"
+}
 
-# Initialize DB
+# Initialize database
 init_db()
 
-
-# -----------------------------------------------------
+# --------------------------------
 # STATIC ROUTES
-# -----------------------------------------------------
+# --------------------------------
 @app.route("/")
 def index():
-    return send_from_directory(app.static_folder, "index.html")
+    return send_from_directory(STATIC_DIR, "index.html")
+
+
+@app.route("/erp")
+def erp():
+    return send_from_directory(STATIC_DIR, "erp.html")
 
 
 @app.route("/static/<path:filename>")
 def static_files(filename):
-    return send_from_directory(app.static_folder, filename)
+    return send_from_directory(STATIC_DIR, filename)
 
-
-# -----------------------------------------------------
-# GRID + PATH PLANNING
-# -----------------------------------------------------
-@app.route("/api/grid", methods=["GET"])
+# --------------------------------
+# GRID & PATH
+# --------------------------------
+@app.route("/api/grid")
 def api_grid():
     return jsonify(GRID)
 
 
 @app.route("/api/plan", methods=["POST"])
 def api_plan():
-    data = request.json or {}
-    start = data.get("start")
-    goal = data.get("goal")
-
-    if not start or not goal:
-        return jsonify({"error": "start and goal required"}), 400
-
-    path = astar(GRID, start, goal)
+    data = request.json
+    path = astar(GRID, data["start"], data["goal"])
     return jsonify({"path": path})
 
-
-# -----------------------------------------------------
-# ORDERS
-# -----------------------------------------------------
-@app.route("/api/orders", methods=["POST"])
-def api_create_order():
-    data = request.json or {}
-    pickup = data.get("pickup")
-    delivery = data.get("delivery")
-
-    if not pickup or not delivery:
-        return jsonify({"error": "pickup and delivery required"}), 400
-
-    order_id = create_order(pickup, delivery)
-    return jsonify({"message": "created", "order_id": order_id})
-
-
-@app.route("/api/orders", methods=["GET"])
-def api_list_orders():
-    return jsonify(list_orders())
-
-
-# -----------------------------------------------------
-# AGV CONTROLS
-# -----------------------------------------------------
-@app.route("/api/agv", methods=["GET"])
-def api_agv():
-    return jsonify(agv_state)
-
-
-def run_agv_path(path, order_id=None):
-    agv_state["status"] = "moving"
-
-    for node in path[1:]:
-        agv_state["r"], agv_state["c"] = node
-        time.sleep(0.15)
-
-    agv_state["status"] = "idle"
-
-    if order_id:
-        update_order_status(order_id, "completed")
-
-
-@app.route("/api/execute", methods=["POST"])
-def api_execute():
-    data = request.json or {}
-    path = data.get("path")
-    order_id = data.get("order_id")
-
-    if not path:
-        return jsonify({"error": "path required"}), 400
-
-    t = threading.Thread(target=run_agv_path, args=(path, order_id), daemon=True)
-    t.start()
-
-    return jsonify({"message": "execution started"})
-
-
-# -----------------------------------------------------
-# INVENTORY (ZONES + RACKS)
-# -----------------------------------------------------
+# --------------------------------
+# INVENTORY
+# --------------------------------
 @app.route("/api/inventory", methods=["GET"])
-def api_inventory_list():
+def inventory_list():
     return jsonify(list_products())
 
 
 @app.route("/api/inventory", methods=["POST"])
-def api_inventory_add():
-    data = request.json or {}
+def inventory_add():
+    data = request.json
 
-    name = data.get("product_name")
-    qty = data.get("quantity")
-    zone = data.get("zone")
-    rack = data.get("rack")
-    row_loc = data.get("row_loc")
-    col_loc = data.get("col_loc")
+    if rack_location_exists(
+        data["zone"], data["rack"],
+        data["row_loc"], data["col_loc"]
+    ):
+        return jsonify({"error": "Rack already occupied"}), 400
 
-    # Validate
-    if None in (name, qty, zone, rack, row_loc, col_loc):
-        return jsonify({"error": "All fields are required"}), 400
+    add_product(
+        data["product_name"],
+        int(data["quantity"]),
+        data["zone"],
+        data["rack"],
+        int(data["row_loc"]),
+        int(data["col_loc"])
+    )
 
-    try:
-        qty = int(qty)
-        row_loc = int(row_loc)
-        col_loc = int(col_loc)
-    except ValueError:
-        return jsonify({"error": "qty, row_loc, col_loc must be integers"}), 400
-
-    # 🚫 Prevent duplicate rack location
-    if rack_location_exists(zone, rack, row_loc, col_loc):
-        return jsonify({
-            "error": f"Rack {zone}-{rack} at ({row_loc},{col_loc}) is already occupied"
-        }), 400
-
-    # ✅ Insert product
-    add_product(name, qty, zone, rack, row_loc, col_loc)
-
-    return jsonify({"message": "Product added successfully"}), 200
+    return jsonify({"message": "Product added"})
 
 
 @app.route("/api/inventory/<int:pid>", methods=["PUT"])
-def api_inventory_update(pid):
-    data = request.json or {}
-    qty = data.get("quantity")
-
-    if qty is None:
-        return jsonify({"error": "quantity required"}), 400
-
-    try:
-        qty = int(qty)
-    except ValueError:
-        return jsonify({"error": "quantity must be integer"}), 400
-
-    update_product_qty(pid, qty)
+def inventory_update(pid):
+    update_product_qty(pid, int(request.json["quantity"]))
     return jsonify({"message": "Quantity updated"})
 
-@app.route("/erp")
-def erp_dashboard():
-    return send_from_directory(app.static_folder, "erp.html")
+# --------------------------------
+# ORDERS
+# --------------------------------
+@app.route("/api/orders", methods=["GET"])
+def orders_list():
+    return jsonify(list_orders())
 
 
+@app.route("/api/orders", methods=["POST"])
+def orders_create():
+    data = request.json
+    order_id = create_order(data["pickup"], data["delivery"])
+    return jsonify({"order_id": order_id})
 
-# -----------------------------------------------------
+# --------------------------------
+# AGV STATUS
+# --------------------------------
+@app.route("/api/agv")
+def agv_status():
+    return jsonify(agv_state)
+
+# --------------------------------
+# AGV EXECUTION THREAD
+# --------------------------------
+def run_agv(path, order_id):
+    agv_state["status"] = "moving"
+
+    for r, c in path[1:]:
+        agv_state["r"] = r
+        agv_state["c"] = c
+        time.sleep(0.15)
+
+    agv_state["status"] = "idle"
+    update_order_status(order_id, "completed")
+
+# --------------------------------
+# EXECUTE ORDER (ERP CORE)
+# --------------------------------
+@app.route("/api/execute-order/<int:order_id>", methods=["POST"])
+def execute_order(order_id):
+    order = get_order_by_id(order_id)
+
+    if not order:
+        return jsonify({"error": "Order not found"}), 404
+
+    if order["status"] != "pending":
+        return jsonify({"error": "Order already executed"}), 400
+
+    update_order_status(order_id, "in_progress")
+
+    start = (agv_state["r"], agv_state["c"])
+    pickup = (order["pickup_r"], order["pickup_c"])
+    delivery = (order["delivery_r"], order["delivery_c"])
+
+    path1 = astar(GRID, start, pickup)
+    path2 = astar(GRID, pickup, delivery)
+
+    if not path1 or not path2:
+        update_order_status(order_id, "failed")
+        return jsonify({"error": "Path planning failed"}), 500
+
+    full_path = path1 + path2[1:]
+
+    t = threading.Thread(
+        target=run_agv,
+        args=(full_path, order_id),
+        daemon=True
+    )
+    t.start()
+
+    return jsonify({"message": "Order sent to AGV"})
+
+# --------------------------------
 # RUN SERVER
-# -----------------------------------------------------
+# --------------------------------
 if __name__ == "__main__":
-    app.run(port=5000, debug=True)
+    app.run(debug=True)

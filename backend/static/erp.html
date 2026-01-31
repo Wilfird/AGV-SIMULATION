@@ -9,15 +9,12 @@
 
 <div class="container">
 
-    <!-- SIDEBAR -->
+    <!-- ================= SIDEBAR ================= -->
     <aside class="sidebar">
         <h2>🏭 ERP SYSTEM</h2>
 
         <button onclick="showSection('overview')">📊 Overview</button>
-
-        <!-- ✅ REDIRECT TO WMS INVENTORY -->
         <button onclick="goToInventory()">📦 Inventory</button>
-
         <button onclick="showSection('orders')">🧾 Orders</button>
         <button onclick="showSection('agv')">🚚 AGV Status</button>
         <button onclick="showSection('reports')">📈 Reports</button>
@@ -25,7 +22,7 @@
         <a href="/" class="back-btn">⬅ AGV Simulation</a>
     </aside>
 
-    <!-- CONTENT -->
+    <!-- ================= CONTENT ================= -->
     <main class="content">
 
         <!-- ================= OVERVIEW ================= -->
@@ -58,30 +55,53 @@
         <!-- ================= ORDERS ================= -->
         <section id="orders" class="section hidden full-width">
 
-            <h3>🧾 Create Order (ERP)</h3>
+            <h3>🧾 Orders (ERP → WMS → AGV)</h3>
 
+            <!-- CREATE ORDER CARD -->
             <div class="order-card">
+                <h4>Create New Order</h4>
 
-                <label>Order Type</label>
-                <input type="text" id="orderType" value="Production">
+                <div class="order-grid">
+                    <div>
+                        <label>Pickup Location</label>
+                        <input type="number" id="pickupRow" placeholder="Row">
+                        <input type="number" id="pickupCol" placeholder="Column">
+                    </div>
 
-                <h4>Order Items</h4>
-
-                <div id="orderItems">
-                    <div class="order-row">
-                        <input type="number" placeholder="Product ID" class="pid">
-                        <input type="number" placeholder="Quantity" class="qty">
-                        <button class="remove-btn" onclick="removeItem(this)">−</button>
+                    <div>
+                        <label>Delivery Location</label>
+                        <input type="number" id="deliveryRow" placeholder="Row">
+                        <input type="number" id="deliveryCol" placeholder="Column">
                     </div>
                 </div>
 
-                <button class="add-btn" onclick="addItem()">➕ Add Item</button>
-
                 <button class="submit-btn" onclick="createOrderERP()">
-                    Create & Send to WMS
+                    🚀 Create Order
                 </button>
 
                 <p id="orderMsg"></p>
+            </div>
+
+            <!-- ORDERS TABLE -->
+            <div class="table-card">
+                <h4>Order Management</h4>
+
+                <table class="erp-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Pickup</th>
+                            <th>Delivery</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ordersTable">
+                        <tr>
+                            <td colspan="5">Loading orders...</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
 
         </section>
@@ -103,7 +123,6 @@
 
 <script src="/static/erp.js"></script>
 
-<!-- ✅ REDIRECT FUNCTION -->
 <script>
 function goToInventory() {
     window.location.href = "/static/inventory.html";

@@ -1,6 +1,9 @@
 import sqlite3
 from pathlib import Path
 
+# -----------------------------------
+# DATABASE PATH
+# -----------------------------------
 DB_PATH = Path(__file__).parent / "agv.sqlite3"
 
 
@@ -9,7 +12,7 @@ DB_PATH = Path(__file__).parent / "agv.sqlite3"
 # -----------------------------------
 def get_connection():
     conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row  # Return dict-like rows
+    conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON;")
     return conn
 
@@ -29,11 +32,11 @@ def init_orders_table():
     cur.execute("""
         CREATE TABLE IF NOT EXISTS orders (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            pickup_r INTEGER,
-            pickup_c INTEGER,
-            delivery_r INTEGER,
-            delivery_c INTEGER,
-            status TEXT,
+            pickup_r INTEGER NOT NULL,
+            pickup_c INTEGER NOT NULL,
+            delivery_r INTEGER NOT NULL,
+            delivery_c INTEGER NOT NULL,
+            status TEXT DEFAULT 'pending',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
@@ -47,7 +50,6 @@ def init_inventory_table():
     conn = get_connection()
     cur = conn.cursor()
 
-    # UNIQUE constraint prevents items from using same rack slot (zone,rack,row,col)
     cur.execute("""
         CREATE TABLE IF NOT EXISTS inventory (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -90,25 +92,37 @@ def list_orders():
     conn = get_connection()
     cur = conn.cursor()
 
-    cur.execute("""
-        SELECT *
-        FROM orders
-        ORDER BY id DESC
-    """)
-
+    cur.execute("SELECT * FROM orders ORDER BY id DESC")
     rows = [dict(row) for row in cur.fetchall()]
+
     cur.close()
     conn.close()
     return rows
+
+
+def get_order_by_id(order_id):
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute("SELECT * FROM orders WHERE id = ?", (order_id,))
+    row = cur.fetchone()
+
+    cur.close()
+    conn.close()
+
+    return dict(row) if row else None
 
 
 def update_order_status(order_id, status):
     conn = get_connection()
     cur = conn.cursor()
 
-    cur.execute("UPDATE orders SET status = ? WHERE id = ?", (status, order_id))
-    conn.commit()
+    cur.execute(
+        "UPDATE orders SET status = ? WHERE id = ?",
+        (status, order_id)
+    )
 
+    conn.commit()
     cur.close()
     conn.close()
 
@@ -122,7 +136,7 @@ def add_product(name, qty, zone, rack, r, c):
 
     try:
         cur.execute("""
-            INSERT INTO inventory 
+            INSERT INTO inventory
             (product_name, quantity, zone, rack, row_loc, col_loc)
             VALUES (?, ?, ?, ?, ?, ?)
         """, (name, qty, zone, rack, r, c))
@@ -130,7 +144,6 @@ def add_product(name, qty, zone, rack, r, c):
         conn.commit()
 
     except sqlite3.IntegrityError:
-        # UNIQUE constraint failed (duplicate rack slot)
         cur.close()
         conn.close()
         return False
@@ -157,7 +170,7 @@ def update_product_qty(product_id, qty):
     cur = conn.cursor()
 
     cur.execute("""
-        UPDATE inventory 
+        UPDATE inventory
         SET quantity = ?
         WHERE id = ?
     """, (qty, product_id))
@@ -176,10 +189,11 @@ def rack_location_exists(zone, rack, r, c):
         WHERE zone = ? AND rack = ? AND row_loc = ? AND col_loc = ?
     """, (zone, rack, r, c))
 
-    row = cur.fetchone()
+    exists = cur.fetchone() is not None
+
     cur.close()
     conn.close()
-    return row is not None
+    return exists
 
 
 # -----------------------------------
@@ -219,6 +233,7 @@ def get_products_in_rack(zone, rack):
     """, (zone, rack))
 
     rows = [dict(row) for row in cur.fetchall()]
+
     cur.close()
     conn.close()
     return rows
