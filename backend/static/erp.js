@@ -7,10 +7,20 @@ const REFRESH_INTERVAL = 3000;
 // On page load
 window.onload = () => {
     loadAll();
-    setInterval(loadAll, REFRESH_INTERVAL);
+    loadWMSProducts();
+    loadOrdersTable();
+    setInterval(refreshLiveData, REFRESH_INTERVAL);
 };
 
-// Load all KPIs
+// Only refresh dynamic things
+function refreshLiveData() {
+    loadAll();
+    loadOrdersTable();
+}
+
+// =====================================
+// LOAD ALL KPIs
+// =====================================
 function loadAll() {
     loadInventoryKPI();
     loadOrderCount();
@@ -52,7 +62,7 @@ async function loadOrderCount() {
         const data = await res.json();
 
         const active = data.filter(
-            o => o.status !== "completed" && o.status !== "failed"
+            o => o.status !== "COMPLETED" && o.status !== "FAILED"
         ).length;
 
         el.innerText = `${active} Active Orders`;
@@ -80,43 +90,6 @@ async function loadAgvStatus() {
 }
 
 // =====================================
-// INVENTORY TABLE
-// =====================================
-async function loadInventoryTable() {
-    const tbody = document.getElementById("inventoryTable");
-
-    try {
-        const res = await fetch("/api/inventory");
-        const data = await res.json();
-
-        tbody.innerHTML = "";
-
-        if (data.length === 0) {
-            tbody.innerHTML =
-                `<tr><td colspan="6">No inventory available</td></tr>`;
-            return;
-        }
-
-        data.forEach(item => {
-            const row = document.createElement("tr");
-            row.innerHTML = `
-                <td>${item.id}</td>
-                <td>${item.product_name}</td>
-                <td>${item.quantity}</td>
-                <td>${item.zone}</td>
-                <td>${item.rack}</td>
-                <td>(${item.row_loc}, ${item.col_loc})</td>
-            `;
-            tbody.appendChild(row);
-        });
-
-    } catch {
-        tbody.innerHTML =
-            `<tr><td colspan="6">Failed to load inventory</td></tr>`;
-    }
-}
-
-// =====================================
 // SECTION SWITCHER
 // =====================================
 function showSection(sectionId) {
@@ -128,22 +101,109 @@ function showSection(sectionId) {
 
     if (sectionId === "orders") {
         loadOrdersTable();
+        loadWMSProducts();
     }
 }
+
+// =====================================
+// LOAD WMS PRODUCTS
+// =====================================
+async function loadWMSProducts() {
+    const select = document.getElementById("pickupSelect");
+    const info = document.getElementById("productInfo");
+
+    if (!select) return;
+
+    try {
+        const res = await fetch("/api/inventory");
+        const products = await res.json();
+
+        select.innerHTML = "";
+
+        const available = products.filter(p => p.quantity > 0);
+
+        if (available.length === 0) {
+            select.innerHTML = `<option value="">No stock available</option>`;
+            info.innerHTML = "<p>No available inventory</p>";
+            return;
+        }
+
+        available.forEach(p => {
+            const option = document.createElement("option");
+
+            option.value = JSON.stringify({
+                row: p.row_loc,
+                col: p.col_loc,
+                qty: p.quantity,
+                rack: p.rack,
+                zone: p.zone,
+                name: p.product_name
+            });
+
+            option.textContent =
+                `${p.product_name} | Qty: ${p.quantity} | Zone ${p.zone} Rack ${p.rack}`;
+
+            select.appendChild(option);
+        });
+
+        showSelectedProductInfo();
+
+    } catch (err) {
+        console.error("Inventory load error:", err);
+    }
+}
+
+// =====================================
+// SHOW PRODUCT DETAILS
+// =====================================
+function showSelectedProductInfo() {
+
+    const select = document.getElementById("pickupSelect");
+    const info = document.getElementById("productInfo");
+
+    if (!select || !select.value) {
+        info.innerHTML = "";
+        return;
+    }
+
+    const data = JSON.parse(select.value);
+
+    info.innerHTML = `
+        <p><b>Product:</b> ${data.name}</p>
+        <p><b>Available:</b> ${data.qty}</p>
+        <p><b>Rack:</b> Zone ${data.zone} - Rack ${data.rack}</p>
+        <p><b>Grid Location:</b> (${data.row}, ${data.col})</p>
+    `;
+}
+
+// Auto update product info
+document.addEventListener("change", function(e){
+    if (e.target.id === "pickupSelect") {
+        showSelectedProductInfo();
+    }
+});
 
 // =====================================
 // CREATE ORDER
 // =====================================
 async function createOrderERP() {
-    const pr = document.getElementById("pickupRow").value;
-    const pc = document.getElementById("pickupCol").value;
+
+    const select = document.getElementById("pickupSelect");
+    const msg = document.getElementById("orderMsg");
+
+    if (!select || !select.value) {
+        msg.innerText = "❌ No product selected";
+        msg.style.color = "red";
+        return;
+    }
+
+    const pickupData = JSON.parse(select.value);
+
     const dr = document.getElementById("deliveryRow").value;
     const dc = document.getElementById("deliveryCol").value;
 
-    const msg = document.getElementById("orderMsg");
-
-    if (pr === "" || pc === "" || dr === "" || dc === "") {
-        msg.innerText = "❌ Please fill all fields";
+    if (!dr || !dc) {
+        msg.innerText = "❌ Enter delivery location";
         msg.style.color = "red";
         return;
     }
@@ -153,21 +213,22 @@ async function createOrderERP() {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                pickup: [Number(pr), Number(pc)],
+                pickup: [pickupData.row, pickupData.col],
                 delivery: [Number(dr), Number(dc)]
             })
         });
 
         const data = await res.json();
-
         if (!res.ok) throw new Error(data.error);
 
         msg.innerText = `✅ Order Created (ID: ${data.order_id})`;
         msg.style.color = "green";
 
-        // Clear form
-        ["pickupRow","pickupCol","deliveryRow","deliveryCol"]
-            .forEach(id => document.getElementById(id).value = "");
+        document.getElementById("deliveryRow").value = "";
+        document.getElementById("deliveryCol").value = "";
+
+        loadOrdersTable();
+        loadWMSProducts();
 
     } catch (err) {
         msg.innerText = "❌ Failed to create order";
@@ -180,6 +241,7 @@ async function createOrderERP() {
 // LOAD ORDERS TABLE
 // =====================================
 async function loadOrdersTable() {
+
     const tbody = document.getElementById("ordersTable");
 
     try {
@@ -188,24 +250,26 @@ async function loadOrdersTable() {
 
         tbody.innerHTML = "";
 
-        if (orders.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5">No orders</td></tr>`;
+        if (!orders || orders.length === 0) {
+            tbody.innerHTML =
+                `<tr><td colspan="5">No orders available</td></tr>`;
             return;
         }
 
         orders.forEach(order => {
-            const tr = document.createElement("tr");
 
-            const canExecute = order.status === "pending";
+            const canExecute = order.status === "CREATED";
+
+            const tr = document.createElement("tr");
 
             tr.innerHTML = `
                 <td>${order.id}</td>
-                <td>(${order.pickup_r}, ${order.pickup_c})</td>
-                <td>(${order.delivery_r}, ${order.delivery_c})</td>
+                <td>(${order.pickup_row || order.pickup_r}, ${order.pickup_col || order.pickup_c})</td>
+                <td>(${order.delivery_row || order.delivery_r}, ${order.delivery_col || order.delivery_c})</td>
                 <td>${order.status}</td>
                 <td>
                     ${
-                        canExecute
+                        order.status === "CREATED"
                         ? `<button onclick="executeOrder(${order.id})">▶ Execute</button>`
                         : "—"
                     }
@@ -216,8 +280,9 @@ async function loadOrdersTable() {
         });
 
     } catch (err) {
-        console.error(err);
-        tbody.innerHTML = `<tr><td colspan="5">Error loading orders</td></tr>`;
+        console.error("Order load error:", err);
+        tbody.innerHTML =
+            `<tr><td colspan="5">Error loading orders</td></tr>`;
     }
 }
 
@@ -225,6 +290,7 @@ async function loadOrdersTable() {
 // EXECUTE ORDER
 // =====================================
 async function executeOrder(orderId) {
+
     if (!confirm("Execute this order?")) return;
 
     try {
@@ -233,7 +299,6 @@ async function executeOrder(orderId) {
         });
 
         const result = await res.json();
-
         if (!res.ok) throw new Error(result.error);
 
         alert(result.message);
