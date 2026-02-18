@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ERP Dashboard</title>
+    <title>ERP Dashboard | Smart Warehouse</title>
     <link rel="stylesheet" href="/static/erp.css">
 </head>
 <body>
@@ -57,7 +57,7 @@
 
             <h3>🧾 Orders (ERP → WMS → AGV)</h3>
 
-            <!-- CREATE ORDER CARD -->
+            <!-- CREATE ORDER -->
             <div class="order-card">
                 <h4>Create New Order</h4>
 
@@ -67,7 +67,6 @@
                         <select id="pickupSelect"></select>
 
                         <div id="productInfo" class="product-info"></div>
-
                     </div>
 
                     <div>
@@ -84,7 +83,7 @@
                 <p id="orderMsg"></p>
             </div>
 
-            <!-- ORDERS TABLE -->
+            <!-- ORDER TABLE -->
             <div class="table-card">
                 <h4>Order Management</h4>
 
@@ -105,13 +104,30 @@
                     </tbody>
                 </table>
             </div>
-
         </section>
 
         <!-- ================= AGV ================= -->
         <section id="agv" class="section hidden">
             <h3>🚚 AGV Live Status</h3>
-            <p id="agvStatus">Loading...</p>
+
+            <div class="agv-card">
+
+                <div class="agv-info">
+                    <p><strong>Status:</strong> 
+                        <span id="agvStatusBadge" class="status-badge">Loading...</span>
+                    </p>
+
+                    <p><strong>Current Position:</strong> 
+                        (<span id="agvRow">-</span>, 
+                         <span id="agvCol">-</span>)
+                    </p>
+
+                    <p><strong>Current Order:</strong> 
+                        <span id="agvOrder">None</span>
+                    </p>
+                </div>
+
+            </div>
         </section>
 
         <!-- ================= REPORTS ================= -->

@@ -1,26 +1,183 @@
-:root{--cell-size:48px;--cols:9}
-*{box-sizing:border-box;font-family:Inter,Segoe UI,Arial}
-body{margin:0;background:#f5f7fb;color:#111}
-.app{max-width:1100px;margin:18px auto;padding:12px}
-header{display:flex;justify-content:space-between;align-items:center}
-.controls label{margin-right:8px}
-.controls input{width:80px;padding:4px;margin-left:6px}
-main{display:flex;gap:18px;margin-top:12px}
-.left{flex:1}
-.right{width:320px;background:#fff;border-radius:8px;padding:10px;box-shadow:0 6px 18px rgba(15,20,30,0.06)}
-.grid{
+:root {
+  --cell-size: 52px;
+  --cols: 9;
+
+  --primary: #2563eb;
+  --bg: #f4f6fb;
+  --card-bg: #ffffff;
+  --shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
+}
+
+/* Reset */
+* {
+  box-sizing: border-box;
+  font-family: Inter, Segoe UI, Arial, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: #1f2937;
+}
+
+/* App Container */
+.app {
+  max-width: 1200px;
+  margin: 20px auto;
+  padding: 16px;
+}
+
+/* Header */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+header h2 {
+  margin: 0;
+}
+
+/* Controls */
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.controls input {
+  width: 80px;
+  padding: 6px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+}
+
+/* Layout */
+main {
+  display: flex;
+  gap: 20px;
+}
+
+/* Left Section */
+.left {
+  flex: 1;
+}
+
+/* Right Panel */
+.right {
+  width: 320px;
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: var(--shadow);
+}
+
+/* Grid */
+.grid {
   width: calc(var(--cell-size) * var(--cols));
-  display:grid;
+  display: grid;
   grid-template-columns: repeat(var(--cols), var(--cell-size));
   grid-auto-rows: var(--cell-size);
-  gap:4px;padding:8px;border-radius:8px;background:linear-gradient(180deg,#ffffff,#f1f6ff);
-  box-shadow:0 8px 30px rgba(16,24,40,0.06);
+  gap: 6px;
+  padding: 10px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #ffffff, #eef2ff);
+  box-shadow: var(--shadow);
+  position: relative;
 }
-.cell{display:flex;align-items:center;justify-content:center;border-radius:6px;font-size:12px;position:relative}
-.cell.free{background:#e9f2ff}
-.cell.obstacle{background:#2b2f3a;color:#fff}
-.cell.pickup{background:#d6f5d6}
-.cell.delivery{background:#ffe5c6}
-.agv{position:absolute;width:28px;height:28px;border-radius:50%;background:royalblue;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;transform:translate(-50%,-50%);pointer-events:none;transition:left 0.2s linear, top 0.2s linear;box-shadow:0 4px 10px rgba(0,0,0,0.18)}
-.order-item{padding:8px;border-bottom:1px solid #eee;font-size:13px}
-button{padding:6px 10px;border-radius:6px;border:0;background:#0b63ff;color:#fff;cursor:pointer}
+
+/* Cells */
+.cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-size: 12px;
+  position: relative;
+  transition: 0.2s;
+}
+
+.cell.free {
+  background: #e0f2fe;
+}
+
+.cell.obstacle {
+  background: #1f2937;
+  color: white;
+}
+
+.cell.pickup {
+  background: #bbf7d0;
+  font-weight: 600;
+}
+
+.cell.delivery {
+  background: #fed7aa;
+  font-weight: 600;
+}
+
+/* AGV */
+.agv {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  transition: left 0.25s linear, top 0.25s linear;
+  box-shadow: 0 6px 15px rgba(37, 99, 235, 0.4);
+}
+
+/* Order List */
+.order-item {
+  padding: 10px;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 14px;
+}
+
+.order-item:last-child {
+  border-bottom: none;
+}
+
+/* Buttons */
+button {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: none;
+  background: var(--primary);
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+button:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  main {
+    flex-direction: column;
+  }
+
+  .right {
+    width: 100%;
+  }
+
+  .grid {
+    margin: auto;
+  }
+}

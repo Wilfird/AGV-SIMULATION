@@ -1,81 +1,212 @@
+/* ================================
+   GLOBAL STYLES
+================================ */
+
 body {
     margin: 0;
-    background: #f7f9fb;
-    font-family: Arial, sans-serif;
+    background: #f4f6f9;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #2c3e50;
 }
 
-.container {
-    width: 90%;
-    margin: auto;
-    padding: 20px;
+.inventory-page {
+    padding: 30px 50px;
 }
 
-header {
+/* ================================
+   HEADER
+================================ */
+
+.inventory-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-bottom: 35px;
 }
 
-h1 {
-    color: #333;
+.inventory-header h1 {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 600;
 }
+
+.inventory-header p {
+    margin: 5px 0 0;
+    color: #7f8c8d;
+}
+
+.header-actions {
+    display: flex;
+    gap: 12px;
+}
+
+/* ================================
+   BUTTONS
+================================ */
 
 .btn {
-    background: #0066ff;
-    color: white;
-    padding: 8px 14px;
+    padding: 8px 16px;
     border-radius: 6px;
     text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    background: #007bff;
+    color: white;
+    border: none;
     cursor: pointer;
+    transition: 0.3s ease;
 }
 
-.inventory-section {
+.btn:hover {
+    background: #0056b3;
+}
+
+.btn.secondary {
+    background: #6c757d;
+}
+
+.btn.secondary:hover {
+    background: #545b62;
+}
+
+.btn.full {
+    width: 100%;
+    margin-top: 20px;
+}
+
+/* ================================
+   MAIN CONTENT LAYOUT
+================================ */
+
+.inventory-content {
     display: flex;
-    margin-top: 25px;
     gap: 30px;
+    align-items: flex-start;
 }
 
-.form-container, .table-container {
+/* ================================
+   CARD STYLE
+================================ */
+
+.card {
     background: white;
-    padding: 20px;
-    border-radius: 8px;
-    width: 45%;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    border-radius: 10px;
+    padding: 25px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+}
+
+.form-card {
+    width: 40%;
+}
+
+.table-card {
+    width: 60%;
+}
+
+/* ================================
+   FORM GRID
+================================ */
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px 20px;
+    margin-top: 15px;
 }
 
 label {
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 6px;
     display: block;
-    margin-top: 12px;
+    color: #34495e;
 }
 
-input {
-    width: 95%;
-    padding: 6px;
-    margin-top: 5px;
+input,
+select {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid #dcdde1;
+    font-size: 14px;
+    transition: 0.2s ease;
 }
 
-.coord-group {
-    display: flex;
-    gap: 10px;
+input:focus,
+select:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
 }
 
-table {
+/* ================================
+   TABLE
+================================ */
+
+.inventory-table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 12px;
+    margin-top: 15px;
+    font-size: 14px;
 }
 
-table th, table td {
-    border: 1px solid #ddd;
-    padding: 8px;
-    text-align: center;
+.inventory-table thead {
+    background: #f1f3f6;
 }
+
+.inventory-table th {
+    padding: 12px 10px;
+    text-align: center;
+    font-weight: 600;
+    color: #34495e;
+    border-bottom: 2px solid #e1e4e8;
+}
+
+.inventory-table td {
+    padding: 10px;
+    text-align: center;
+    border-bottom: 1px solid #ecf0f1;
+}
+
+.inventory-table tbody tr:hover {
+    background: #f9fbfd;
+}
+
+/* ================================
+   UPDATE BUTTON
+================================ */
 
 .update-btn {
-    padding: 4px 10px;
-    background: orange;
+    padding: 5px 12px;
+    background: #ff9800;
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: 5px;
+    font-size: 13px;
     cursor: pointer;
+    transition: 0.3s ease;
+}
+
+.update-btn:hover {
+    background: #e68900;
+}
+
+/* ================================
+   RESPONSIVE
+================================ */
+
+@media (max-width: 1000px) {
+
+    .inventory-content {
+        flex-direction: column;
+    }
+
+    .form-card,
+    .table-card {
+        width: 100%;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
 }

@@ -1,4 +1,5 @@
 # app.py
+
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from pathlib import Path
@@ -35,7 +36,8 @@ CORS(app)
 agv_state = {
     "r": AGV_START[0],
     "c": AGV_START[1],
-    "status": "idle"
+    "status": "idle",   # idle | moving_to_pickup | loading | moving_to_delivery | unloading
+    "current_order": None
 }
 
 # Initialize database
@@ -52,6 +54,11 @@ def index():
 @app.route("/erp")
 def erp():
     return send_from_directory(STATIC_DIR, "erp.html")
+
+
+@app.route("/inventory")
+def inventory():
+    return send_from_directory(STATIC_DIR, "inventory.html")
 
 
 @app.route("/static/<path:filename>")
@@ -85,8 +92,10 @@ def inventory_add():
     data = request.json
 
     if rack_location_exists(
-        data["zone"], data["rack"],
-        data["row_loc"], data["col_loc"]
+        data["zone"],
+        data["rack"],
+        data["row_loc"],
+        data["col_loc"]
     ):
         return jsonify({"error": "Rack already occupied"}), 400
 
@@ -129,31 +138,56 @@ def agv_status():
     return jsonify(agv_state)
 
 # --------------------------------
-# AGV EXECUTION THREAD
+# AGV MOVEMENT ENGINE
 # --------------------------------
-def run_agv(path, order_id):
-    agv_state["status"] = "moving"
+def run_agv(path_to_pickup, path_to_delivery, order_id):
 
-    for r, c in path[1:]:
+    agv_state["status"] = "moving_to_pickup"
+    agv_state["current_order"] = order_id
+
+    # Move to pickup
+    for r, c in path_to_pickup[1:]:
         agv_state["r"] = r
         agv_state["c"] = c
         time.sleep(0.15)
 
+    # Simulate loading
+    agv_state["status"] = "loading"
+    time.sleep(1)
+
+    # Move to delivery
+    agv_state["status"] = "moving_to_delivery"
+    for r, c in path_to_delivery[1:]:
+        agv_state["r"] = r
+        agv_state["c"] = c
+        time.sleep(0.15)
+
+    # Simulate unloading
+    agv_state["status"] = "unloading"
+    time.sleep(1)
+
+    # Finish
     agv_state["status"] = "idle"
+    agv_state["current_order"] = None
+
     update_order_status(order_id, "completed")
 
 # --------------------------------
-# EXECUTE ORDER (ERP CORE)
+# EXECUTE ORDER
 # --------------------------------
 @app.route("/api/execute-order/<int:order_id>", methods=["POST"])
 def execute_order(order_id):
+
     order = get_order_by_id(order_id)
 
     if not order:
         return jsonify({"error": "Order not found"}), 404
 
     if order["status"] != "pending":
-        return jsonify({"error": "Order already executed"}), 400
+        return jsonify({"error": "Order already processed"}), 400
+
+    if agv_state["status"] != "idle":
+        return jsonify({"error": "AGV is busy"}), 400
 
     update_order_status(order_id, "in_progress")
 
@@ -161,18 +195,20 @@ def execute_order(order_id):
     pickup = (order["pickup_r"], order["pickup_c"])
     delivery = (order["delivery_r"], order["delivery_c"])
 
+    # Plan path to pickup
     path1 = astar(GRID, start, pickup)
+
+    # Plan path to delivery
     path2 = astar(GRID, pickup, delivery)
 
     if not path1 or not path2:
         update_order_status(order_id, "failed")
         return jsonify({"error": "Path planning failed"}), 500
 
-    full_path = path1 + path2[1:]
-
+    # Start AGV movement thread
     t = threading.Thread(
         target=run_agv,
-        args=(full_path, order_id),
+        args=(path1, path2, order_id),
         daemon=True
     )
     t.start()

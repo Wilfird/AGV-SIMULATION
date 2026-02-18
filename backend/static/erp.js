@@ -311,3 +311,20 @@ async function executeOrder(orderId) {
         console.error(err);
     }
 }
+
+
+async function loadAgvStatus() {
+    const res = await fetch("/api/agv");
+    const data = await res.json();
+
+    document.getElementById("agvRow").innerText = data.r;
+    document.getElementById("agvCol").innerText = data.c;
+    document.getElementById("agvOrder").innerText = data.current_order || "None";
+
+    const badge = document.getElementById("agvStatusBadge");
+    badge.innerText = data.status.toUpperCase();
+
+    badge.className = "status-badge " + data.status;
+}
+
+setInterval(loadAgvStatus, 1000);
